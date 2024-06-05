@@ -27,6 +27,18 @@ struct Car
         collectedCheckpoints.resize(numCheckpoints, false);
     }
 
+    void reset(float startX, float startY, float startSpeed)
+    {
+        x = startX;
+        y = startY;
+        speed = startSpeed;
+        angle = 0;
+        n = 0;
+        lap = 0;
+        checkpointsCollected = 0;
+        std::fill(collectedCheckpoints.begin(), collectedCheckpoints.end(), false);
+    }
+
     void move(float bgWidth, float bgHeight, float carWidth, float carHeight)
     {
         x += sin(angle) * speed;
@@ -58,17 +70,19 @@ struct Car
 
 int main()
 {
-    Texture t1, t2;
+    Texture t1, t2, t3;
     t1.loadFromFile("C:\\projects\\c++\\labs\\SFML-games\\images\\background.png");
     t2.loadFromFile("C:\\projects\\c++\\labs\\SFML-games\\images\\car.png");
+    t3.loadFromFile("C:\\projects\\c++\\labs\\SFML-games\\images\\istockphoto-1325433246-640x640.jpg");
     t1.setSmooth(true);
     t2.setSmooth(true);
+    t3.setSmooth(true);
 
-    Sprite sBackground(t1), sCar(t2);
+    Sprite sBackground(t1), sCar(t2), sGameOver(t3);
     sBackground.scale(2, 2);
 
     sCar.setOrigin(22, 22);
-    float R = 22;
+    sGameOver.setOrigin(t3.getSize().x / 2, t3.getSize().y / 2);
 
     // Background dimensions (scaled)
     float bgWidth = t1.getSize().x * sBackground.getScale().x;
@@ -83,9 +97,7 @@ int main()
     Car car[N];
     for (int i = 0; i < N; i++)
     {
-        car[i].x = 300 + i * 50;
-        car[i].y = 1700 + i * 80;
-        car[i].speed = 7 + i;
+        car[i].reset(300 + i * 50, 1700 + i * 80, 7 + i);
     }
 
     float speed = 0, angle = 0;
@@ -116,6 +128,17 @@ int main()
         {
             if (e.type == Event::Closed)
                 app.close();
+            if (e.type == Event::KeyPressed && e.key.code == Keyboard::R && gameOver)
+            {
+                // Reset game state
+                for (int i = 0; i < N; i++)
+                {
+                    car[i].reset(300 + i * 50, 1700 + i * 80, 7 + i);
+                }
+                speed = 0;
+                angle = 0;
+                gameOver = false;
+            }
         }
 
         bool Up = 0, Right = 0, Down = 0, Left = 0;
@@ -192,43 +215,46 @@ int main()
             }
         }
 
-        if (gameOver)
-        {
-            app.close();
-        }
-
         app.clear(Color::Black); // Set the background to black instead of white
 
-        int offsetX = car[0].x - view.getSize().x / 2;
-        int offsetY = car[0].y - view.getSize().y / 2;
-
-        // Constrain view offset to the background boundaries
-        if (offsetX < 0) offsetX = 0;
-        if (offsetY < 0) offsetY = 0;
-        if (offsetX > bgWidth - view.getSize().x) offsetX = bgWidth - view.getSize().x;
-        if (offsetY > bgHeight - view.getSize().y) offsetY = bgHeight - view.getSize().y;
-
-        view.setCenter(offsetX + view.getSize().x / 2, offsetY + view.getSize().y / 2);
-        app.setView(view);
-
-        sBackground.setPosition(0, 0);
-        app.draw(sBackground);
-
-        // Draw checkpoints
-        for (int i = 0; i < numCheckpoints; i++)
+        if (gameOver)
         {
-            if (!car[0].collectedCheckpoints[i])
-                app.draw(checkpoints[i]);
+            sGameOver.setPosition(app.getView().getCenter()); // Center the game over image
+            app.draw(sGameOver);
         }
-
-        Color colors[10] = { Color::Red, Color::Green, Color::Magenta, Color::Blue, Color::White };
-
-        for (int i = 0; i < N; i++)
+        else
         {
-            sCar.setPosition(car[i].x, car[i].y);
-            sCar.setRotation(car[i].angle * 180 / 3.141593);
-            sCar.setColor(colors[i]);
-            app.draw(sCar);
+            int offsetX = car[0].x - view.getSize().x / 2;
+            int offsetY = car[0].y - view.getSize().y / 2;
+
+            // Constrain view offset to the background boundaries
+            if (offsetX < 0) offsetX = 0;
+            if (offsetY < 0) offsetY = 0;
+            if (offsetX > bgWidth - view.getSize().x) offsetX = bgWidth - view.getSize().x;
+            if (offsetY > bgHeight - view.getSize().y) offsetY = bgHeight - view.getSize().y;
+
+            view.setCenter(offsetX + view.getSize().x / 2, offsetY + view.getSize().y / 2);
+            app.setView(view);
+
+            sBackground.setPosition(0, 0);
+            app.draw(sBackground);
+
+            // Draw checkpoints
+            for (int i = 0; i < numCheckpoints; i++)
+            {
+                if (!car[0].collectedCheckpoints[i])
+                    app.draw(checkpoints[i]);
+            }
+
+            Color colors[10] = { Color::Red, Color::Green, Color::Magenta, Color::Blue, Color::White };
+
+            for (int i = 0; i < N; i++)
+            {
+                sCar.setPosition(car[i].x, car[i].y);
+                sCar.setRotation(car[i].angle * 180 / 3.141593);
+                sCar.setColor(colors[i]);
+                app.draw(sCar);
+            }
         }
 
         app.display();
